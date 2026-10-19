@@ -43,6 +43,9 @@ class PlaybackService : MediaLibraryService() {
 
     private lateinit var tokens: TokenStore
     private var session: MediaLibrarySession? = null
+    private val likeCommand = androidx.media3.session.SessionCommand("ACTION_LIKE", android.os.Bundle.EMPTY)
+    private val shuffleCommand = androidx.media3.session.SessionCommand("ACTION_SHUFFLE", android.os.Bundle.EMPTY)
+    private val radioCommand = androidx.media3.session.SessionCommand("ACTION_RADIO", android.os.Bundle.EMPTY)
     private var engineStarted = false
 
     private lateinit var container: dev.lelonio.square.SquareApplication
@@ -385,6 +388,34 @@ class PlaybackService : MediaLibraryService() {
                         android.app.PendingIntent.FLAG_UPDATE_CURRENT,
                 ),
             )
+            // callback block test (fuck you oxygenOS)
+            .setCallback(object : MediaLibrarySession.Callback {
+                override fun onConnect(
+                    session: MediaSession,
+                    controller: MediaSession.ControllerInfo
+                ): MediaSession.ConnectionResult {
+                    val sessionCommands = MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon()
+                        .add(likeCommand)
+                        .add(shuffleCommand)
+                        .add(radioCommand)
+                        .build()
+
+                    return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                        .setAvailableSessionCommands(sessionCommands)
+                        .build()
+                }
+
+                override fun onCustomCommand(
+                    session: MediaSession,
+                    controller: MediaSession.ControllerInfo,
+                    customCommand: androidx.media3.session.SessionCommand,
+                    args: android.os.Bundle
+                ): com.google.common.util.concurrent.ListenableFuture<androidx.media3.session.SessionResult> {
+                    return com.google.common.util.concurrent.Futures.immediateFuture(
+                        androidx.media3.session.SessionResult(androidx.media3.session.SessionResult.RESULT_SUCCESS)
+                    )
+                }
+            })
             .build()
 
         // The app's own mark in the shade, instead of Media3's generic note.
