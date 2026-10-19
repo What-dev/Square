@@ -366,30 +366,7 @@ class PlaybackService : MediaLibraryService() {
         startListeningRecorder()
         startWidgetUpdates()
         browseTree = MediaBrowseTree(this, scope, ::ensurePlayerFor, ::resumption)
-        session = MediaLibrarySession.Builder(this, player, browseTree)
-            // Without this the notification is inert to a tap: Media3 has no way
-            // to know which activity owns the session. `SINGLE_TOP` so an app
-            // already running comes forward rather than starting a second copy
-            // on top of itself.
-            .setSessionActivity(
-                android.app.PendingIntent.getActivity(
-                    this,
-                    0,
-                    // Deliberately not ACTION_MAIN/CATEGORY_LAUNCHER. A launcher
-                    // intent aimed at a singleTask activity that is already
-                    // running is treated as "bring the task forward" and the
-                    // intent is never delivered — the app came up on whatever
-                    // screen it was last on and onNewIntent never fired. A
-                    // custom action is delivered.
-                    android.content.Intent(this, dev.lelonio.square.ui.MainActivity::class.java)
-                        .setAction(ACTION_OPEN_PLAYER)
-                        .putExtra(EXTRA_OPEN_PLAYER, true),
-                    android.app.PendingIntent.FLAG_IMMUTABLE or
-                        android.app.PendingIntent.FLAG_UPDATE_CURRENT,
-                ),
-            )
-            // callback block test (fuck you oxygenOS)
-            .setCallback(object : MediaLibrarySession.Callback {
+        session = MediaLibrarySession.Builder(this, player, browseTree, object : MediaLibrarySession.Callback {
                 override fun onConnect(
                     session: MediaSession,
                     controller: MediaSession.ControllerInfo
@@ -416,6 +393,17 @@ class PlaybackService : MediaLibraryService() {
                     )
                 }
             })
+            .setSessionActivity(
+                android.app.PendingIntent.getActivity(
+                    this,
+                    0,
+                    android.content.Intent(this, dev.lelonio.square.ui.MainActivity::class.java)
+                        .setAction(ACTION_OPEN_PLAYER)
+                        .putExtra(EXTRA_OPEN_PLAYER, true),
+                    android.app.PendingIntent.FLAG_IMMUTABLE or
+                        android.app.PendingIntent.FLAG_UPDATE_CURRENT,
+                ),
+            )
             .build()
 
         // The app's own mark in the shade, instead of Media3's generic note.
